@@ -1,7 +1,58 @@
+import 'package:audio_lib_test/audio.dart';
+import 'package:audio_lib_test/pages/page_2.dart';
+import 'package:audio_lib_test/pages/page_1.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fountain_audio/fountain_audio.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: Initializer()));
+}
+
+final audioPlayerProvider = Provider((_) => AudioPlayer());
+final audioPlayer2Provider =
+    StateNotifierProvider<AudioPlayer2, AudioPlayer2State>(
+  (_) => AudioPlayer2(),
+);
+
+class Initializer extends ConsumerStatefulWidget {
+  const Initializer({super.key});
+
+  @override
+  ConsumerState<Initializer> createState() => _InitializerState();
+}
+
+class _InitializerState extends ConsumerState<Initializer> {
+  late Future setupFuture;
+  @override
+  void initState() {
+    super.initState();
+    final player = ref.read(audioPlayerProvider);
+    final player2 = ref.read(audioPlayer2Provider.notifier);
+    setupFuture = Future(() async {
+      player.setup();
+      player2.setup();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: setupFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return const MyApp();
+        }
+        return const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -29,7 +80,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
@@ -44,25 +95,13 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
+class _MyHomePageState extends ConsumerState<MyHomePage> {
   @override
   Widget build(BuildContext context) {
+    final player = ref.read(audioPlayerProvider);
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -75,41 +114,137 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+      body: PageView(
+        children: const [PageOne(), PageTwo()],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () async {
+          player.currentState() == PlayerState.playing
+              ? player.pause()
+              : player.play();
+        },
         tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        child: StreamBuilder(
+          initialData: PlayerState.none,
+          stream: player.playerStateStream,
+          builder: (context, snapshot) {
+            if (snapshot.data == PlayerState.buffering ||
+                snapshot.data == PlayerState.connecting ||
+                snapshot.data == PlayerState.loading ||
+                snapshot.data == PlayerState.ready) {
+              return const CircularProgressIndicator(
+                color: Colors.white,
+              );
+            }
+            return Icon(
+              snapshot.data == PlayerState.playing
+                  ? Icons.pause
+                  : Icons.play_arrow,
+            );
+          },
+        ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
+
+const tracks = <Track>[
+  Track(
+    title: 'one',
+    artist: 'one',
+    url: 'https://www.bensound.com/bensound-music/bensound-dontforget.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+  Track(
+    title: 'two',
+    artist: 'two',
+    url: 'https://www.bensound.com/bensound-music/bensound-worldonfire.mp3',
+    artwork:
+        'https://images.unsplash.com/photo-1564186763535-ebb21ef5277f?auto=format&fit=crop&w=512&q=80',
+  ),
+];

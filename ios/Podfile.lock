@@ -1,0 +1,29 @@
+PODS:
+  - Flutter (1.0.0)
+  - fountain_audio (0.0.1):
+    - Flutter
+    - SwiftAudioEx (~> 0.15.2)
+  - SwiftAudioEx (0.15.3)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - fountain_audio (from `.symlinks/plugins/fountain_audio/ios`)
+
+SPEC REPOS:
+  trunk:
+    - SwiftAudioEx
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  fountain_audio:
+    :path: ".symlinks/plugins/fountain_audio/ios"
+
+SPEC CHECKSUMS:
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  fountain_audio: 730c2b7ff7bb32385cc7fa3da04bcd76255a5200
+  SwiftAudioEx: 83eabba2940924fc1c0d5cb0896049921365229c
+
+PODFILE CHECKSUM: 775997f741c536251164e3eacf6e34abf2eb7a17
+
+COCOAPODS: 1.11.3
